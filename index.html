@@ -115,11 +115,16 @@ svg text{font-family:var(--mono);font-size:10px;fill:var(--ink-soft)}
 .shead{display:flex;justify-content:space-between;align-items:center}
 .shead h2{font-family:var(--serif);font-weight:400;font-size:30px;margin:0}
 .x{border:0;background:var(--hair);color:var(--ink);width:34px;height:34px;border-radius:50%;font-size:16px;cursor:pointer}
+.club{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:10px}
+.club .unit{position:relative}
+.club .unit input{padding-right:34px}
+.club .unit span{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:13px;color:var(--ink-soft);pointer-events:none}
+select#fClub{-webkit-appearance:none;appearance:none;padding-right:34px;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 label.f,.f{display:flex;flex-direction:column;gap:6px}
-input,textarea{font:inherit;color:var(--ink);background:rgba(255,255,255,.35);border:1px solid var(--hair);border-radius:14px;padding:11px 12px;width:100%;min-width:0}
-:root[data-theme="dark"] input,:root[data-theme="dark"] textarea{background:rgba(0,0,0,.2)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) input,:root:not([data-theme="light"]) textarea{background:rgba(0,0,0,.2)}}
+input,textarea,select{font:inherit;color:var(--ink);background:rgba(255,255,255,.35);border:1px solid var(--hair);border-radius:14px;padding:11px 12px;width:100%;min-width:0}
+:root[data-theme="dark"] input,:root[data-theme="dark"] textarea,:root[data-theme="dark"] select{background:rgba(0,0,0,.2)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) input,:root:not([data-theme="light"]) textarea,:root:not([data-theme="light"]) select{background:rgba(0,0,0,.2)}}
 textarea{resize:vertical;min-height:64px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1px solid var(--hair);background:rgba(255,255,255,.2);color:var(--ink);border-radius:999px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer}
@@ -197,6 +202,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
   <div class="f"><span class="lbl">Type</span><div class="chips" id="fType" role="group" aria-label="Type"></div></div>
   <div class="f"><span class="lbl">Format</span><div class="chips" id="fMode" role="group" aria-label="Format"></div></div>
   <div class="f"><span class="lbl">Durée (min)</span><div class="dur" id="fDur"><input type="number" id="fMin" min="5" max="600" step="5" inputmode="numeric" aria-label="Durée en minutes"></div></div>
+  <div class="f" id="distWrap"><span class="lbl">Distance max atteinte</span>
+    <div class="club">
+      <select id="fClub" aria-label="Club"></select>
+      <div class="unit"><input type="number" id="fDist" min="1" max="400" inputmode="numeric" placeholder="150" aria-label="Distance maximale en mètres"><span>m</span></div>
+    </div>
+  </div>
   <div class="two" id="extraRow">
     <label class="f" id="ballsWrap"><span class="lbl">Balles tapées</span><input type="number" id="fBalls" min="0" step="10" inputmode="numeric" placeholder="100"></label>
     <label class="f" id="scoreWrap" hidden><span class="lbl">Score (coups)</span><input type="number" id="fScore" min="18" max="200" inputmode="numeric" placeholder="52"></label>
@@ -245,7 +256,11 @@ function feel(){
   for(let i=1;i<=5;i++){const b=document.createElement("button");b.type="button";b.textContent=i;b.className=i<=state.feel?"on":"";
     b.setAttribute("aria-label",`Ressenti ${i} sur 5`);b.onclick=()=>{state.feel=state.feel===i?0:i;feel()};el.appendChild(b)}
 }
+const CLUBS=[["Bois",["Driver","Bois 3","Bois 5","Hybride"]],["Fers",["Fer 3","Fer 4","Fer 5","Fer 6","Fer 7","Fer 8","Fer 9"]],["Wedges",["PW","GW","SW","LW"]]];
+$("fClub").innerHTML='<option value="">Club…</option>'+CLUBS.map(([g,cs])=>`<optgroup label="${g}">${cs.map(c=>`<option>${c}</option>`).join("")}</optgroup>`).join("");
+const lastClub=()=>{const s=sortSess().find(x=>x.club);return s?s.club:""};
 function toggleExtra(){
+  $("distWrap").hidden=state.type!=="practice";
   $("scoreWrap").hidden=state.type!=="parcours";
   $("ballsWrap").hidden=!["practice","bunker","approche"].includes(state.type);
   $("extraRow").hidden=$("scoreWrap").hidden&&$("ballsWrap").hidden;
@@ -257,6 +272,7 @@ const lastPlace=()=>sessions.length?(sortSess()[0].place||""):"";
 function resetForm(){
   editing=null;state={type:state.type,mode:state.mode,feel:0};
   $("fDate").value=todayISO();$("fMin").value=60;$("fNote").value="";$("fBalls").value="";$("fScore").value="";
+  $("fClub").value=lastClub();$("fDist").value="";
   $("fPlace").value=lastPlace()||"Jamor";
   $("formTitle").textContent="Nouvelle séance";$("save").textContent="Enregistrer la séance";paintForm();
 }
@@ -264,16 +280,20 @@ function startEdit(s){
   editing=s.id;state={type:s.type,mode:s.mode,feel:s.feel||0};
   $("fDate").value=s.date;$("fPlace").value=s.place||"";$("fMin").value=s.minutes;$("fNote").value=s.note||"";
   $("fBalls").value=s.balls??"";$("fScore").value=s.score??"";
+  $("fClub").value=s.club||"";$("fDist").value=s.maxDist??"";
   $("formTitle").textContent="Modifier la séance";$("save").textContent="Enregistrer les modifications";paintForm();openSheet();
 }
 $("sheet").addEventListener("submit",async e=>{
   e.preventDefault();
   const minutes=+$("fMin").value;
   if(!$("fDate").value||!minutes){showMsg("Indique une date et une durée.");return}
+  const isRange=state.type==="practice",dist=isRange&&$("fDist").value?+$("fDist").value:null,club=isRange?$("fClub").value||null:null;
+  if(dist&&!club){showMsg("Choisis le club utilisé pour la distance max.");return}
   const body={date:$("fDate").value,type:state.type,mode:state.mode,minutes,place:$("fPlace").value.trim(),
     feel:state.feel||null,note:$("fNote").value.trim(),
     balls:$("fBalls").value&&!$("ballsWrap").hidden?+$("fBalls").value:null,
-    score:$("fScore").value&&state.type==="parcours"?+$("fScore").value:null,updatedAt:Date.now()};
+    score:$("fScore").value&&state.type==="parcours"?+$("fScore").value:null,
+    club:dist?club:null,maxDist:dist,updatedAt:Date.now()};
   $("save").disabled=true;
   try{const id=editing||("s"+Date.now().toString(36)+Math.random().toString(36).slice(2,6));await store.put(id,body);closeSheet()}
   catch(err){showMsg(errText(err))}finally{$("save").disabled=false}
@@ -381,7 +401,7 @@ function list(all){
     const name=d0.toLocaleDateString("fr-FR",{month:"long",year:"numeric"});
     return `<div class="month"><span>${name[0].toUpperCase()+name.slice(1)}</span><span>${fmtH(tot)}</span></div><div class="glass list">`+
       g.items.map(s=>{const d=parseD(s.date);
-        const extra=[s.place,s.balls?`${s.balls} balles`:"",s.score?`score ${s.score}`:"",s.feel?`ressenti ${s.feel}/5`:""].filter(Boolean).join(" · ");
+        const extra=[s.place,s.balls?`${s.balls} balles`:"",s.maxDist?`${s.club} ${s.maxDist} m max`:"",s.score?`score ${s.score}`:"",s.feel?`ressenti ${s.feel}/5`:""].filter(Boolean).join(" · ");
         const btns=confirmId===s.id?`<button class="ib danger" data-del="${s.id}">Supprimer</button><button class="ib" data-keep>Garder</button>`
           :`<button class="ib" data-edit="${s.id}">Modifier</button><button class="ib" data-ask="${s.id}" aria-label="Supprimer">✕</button>`;
         return `<div class="item"><div class="day num">${d.getDate()}<small>${d.toLocaleDateString("fr-FR",{weekday:"short"}).replace(".","")}</small></div>

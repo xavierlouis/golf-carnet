@@ -11,7 +11,8 @@ Installed on iPhone via Safari → Partager → « Sur l'écran d'accueil ».
 
 ## Data
 - Stored in `localStorage` under key `golf-carnet-v1` as an array of sessions:
-  `{id, date:"YYYY-MM-DD", type:"practice|putting|approche|bunker|parcours|physique", mode:"cours|solo", minutes, place, feel:1-5|null, note, balls|null, score|null, updatedAt}`
+  `{id, date:"YYYY-MM-DD", type:"practice|putting|approche|bunker|parcours|physique", mode:"cours|solo", minutes, place, feel:1-5|null, note, balls|null, score|null, club:string|null, maxDist:number|null, updatedAt}`
+  - `club` + `maxDist` (metres, max distance reached) are only set on `practice` (range) sessions; older sessions simply lack them.
 - **Never rename the key or change the shape without a migration** — it is the user's only copy.
 - Backup: header button « Sauvegarde » → export JSON (iOS share sheet) / import (merge by id, newest `updatedAt` wins).
 - All storage goes through the `store` object (`sub/put/del/all/replace`). A remote backend (e.g. Supabase) can replace it later behind the same API.
