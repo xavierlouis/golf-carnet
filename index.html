@@ -66,6 +66,9 @@ h1{font-family:var(--serif);font-weight:400;font-size:42px;line-height:1;margin:
 .side .v{font-family:var(--serif);font-size:30px;line-height:1}
 .sub{font-size:12px;color:var(--ink-soft)}
 .feel{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--hair);padding-top:12px}
+.balls{grid-column:1/-1;display:flex;justify-content:space-between;align-items:end;gap:10px;border-top:1px solid var(--hair);padding-top:12px}
+.balls .v{font-family:var(--serif);font-size:30px;line-height:1}
+.balls .v small{font-family:var(--sans);font-size:13px;color:var(--ink-soft);margin-left:4px}
 .dots{display:flex;gap:5px}
 .dots i{width:9px;height:9px;border-radius:50%;background:var(--hair)}
 .dots i.on{background:var(--flag)}
@@ -172,6 +175,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
   <div class="glass hero">
     <div><div class="lbl">Total saison</div><div class="big num" id="tTotal">0<small>h</small></div><div class="sub" id="tCount">0 séance</div></div>
     <div class="side"><div class="lbl">Ce mois</div><div class="v num" id="tMonth">0h</div><div class="sub" id="tMonthSub">—</div></div>
+    <div class="balls"><div><div class="lbl">Balles tapées</div><div class="sub" id="tBallsSub">—</div></div><div class="v num" id="tBalls">0<small>balles</small></div></div>
     <div class="feel"><span class="sub" id="tFeelSub">Ressenti moyen · note tes séances</span><div class="dots" id="tFeel"></div></div>
   </div>
 
@@ -364,6 +368,9 @@ function render(){
   const mo=all.filter(s=>s.date.startsWith(ym)),moMin=mo.reduce((s,x)=>s+x.minutes,0);
   const cMin=mo.filter(s=>s.mode==="cours").reduce((s,x)=>s+x.minutes,0);
   $("tMonth").textContent=fmtH(moMin);$("tMonthSub").textContent=mo.length?`dont ${fmtH(cMin)} en cours`:"aucune séance";
+  const nb=all.reduce((a,x)=>a+(+x.balls||0),0),nbMo=mo.reduce((a,x)=>a+(+x.balls||0),0),nf=new Intl.NumberFormat("fr-FR");
+  $("tBalls").innerHTML=`${nf.format(nb)}<small>balle${nb>1?"s":""}</small>`;
+  $("tBallsSub").textContent=nb?`${nf.format(nbMo)} ce mois`:"saisis-les sur tes séances de practice";
   const f=all.filter(s=>s.feel).slice(0,5),avg=f.length?f.reduce((s,x)=>s+x.feel,0)/f.length:0;
   $("tFeelSub").textContent=f.length?`Ressenti moyen · ${avg.toFixed(1)}/5 sur ${f.length} séance${f.length>1?"s":""}`:"Ressenti moyen · note tes séances";
   $("tFeel").innerHTML=[1,2,3,4,5].map(i=>`<i class="${i<=Math.round(avg)?"on":""}"></i>`).join("");
